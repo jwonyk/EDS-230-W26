@@ -4,23 +4,36 @@
 #' @param  year (when was energy obtained)
 #' @param discount rate (default 0.12)
 #' @return data frame with estimate of profit
-compute_profit_frompower_priceV <- function(energy, year, price, discount = 0.12, price_inflation = 0) {
+
+compute_profit_frompower_priceV <- function(energy, year, 
+                                            price, discount = 0.12, 
+                                            price_inflation = 0) {
+  
   # make sure values are reasonable
   if (length(energy) < 1) {
+    
     return(NA)
+  
   }
 
   # energy cannot be negative
   if (min(energy) < 0) {
+    
     return(NA)
+    
   }
+  
   # if only one price is given, assume it applies to all years
-
   if (length(price == 1)) {
+    
     if (price_inflation > 0) {
+      
       price <- price * (1 + price_inflation) ^ (year - year[1])
+      
     }
+    
     price = rep(price, times = length(energy))
+    
   }
 
   # generate a unique identifier or scenario number
@@ -34,4 +47,5 @@ compute_profit_frompower_priceV <- function(energy, year, price, discount = 0.12
     mutate(netpre = compute_NPV(value = net, time = year - year[1], discount = discount))
 
   return(yearprofit)
+  
 }

@@ -1,0 +1,48 @@
+---
+title: "Assignment 2: Conceptual Model"
+format: pdf
+author: "Ava Robillard, Jaslyn Miura, Jay Kim"
+date: 1/12/26
+---
+
+### 1. State your modeling goal clearly and precisely and the type of goal (understanding, prediction or communication)
+
+Our modeling goal is to understand what environmental and biological factors influence the speed of monarch butterfly migration.
+
+### 2. List the key inputs, parameters and outputs (as precisely as possible, think about space and time)
+
+a)  Inputs: Time, Wind Speed, Temperature, Plant Availability (food), which vary across the migration.
+
+-   Time: Month of the year
+-   Wind speed: km/h
+-   Air temperature: Degrees C
+-   Plant Availability: Density of milkweed, plants per square meter
+
+b)  Parameters: factors that are kept constant that influence the speed of monarch migration
+
+- Butterfly flight speed: km/h
+- Carrying capacity: number of butterflies/square kilometer
+- Optimal temperature range for migration: Degrees C
+
+c)  Outputs: Butterfly population count in different spatial zones (each square kilometer within the study area)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### 3. Sketch the underlying conceptual model that would relate inputs/parameters to the outputs
+
+![](images/model.jpeg)

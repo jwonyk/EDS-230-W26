@@ -20,7 +20,6 @@ library(here)
 
 ## Answer to challenge from last class {.scrollable}
 
-
 ```{r valuep, echo=TRUE}
 source(here("R/compute_NPV.R"))
 source(here("R/compute_profit_frompower_priceV.R"))
@@ -61,8 +60,9 @@ profit_solar_random <- compute_profit_frompower_priceV(
   profit_solar_random %>% mutate(scenario = "random price"))
 
 ```
-    
+
 ## Plot
+
 ```{r solarprofit, echo=TRUE}
 p1 = ggplot(combine_profit, aes(as.factor(year), netpre, fill = scenario)) +
   geom_boxplot() +
@@ -89,8 +89,6 @@ include_graphics(here("lectures_qmd/img/power_comparison_figure.jpeg" ))
 -   Power generation from solar radiation (solarpv.R)
 -   Power generation from reservoir height and flow rate (power_gen.R))
 -   Profit from power generation (compute_profit_frompower.R) (net present value) (compute_NPV.R)
-
- 
 
 ## Putting it all together {.scrollable}
 
@@ -140,10 +138,8 @@ In "real" application we'd have flow and height measurement here we will generat
 source(here("R/power_gen.R"))
 
 # Step 1 - create some sample data for our reservoir model
-
 # we are 'making up' inputs for hydro power - to have it match the number of year
 # that we had solar values for, lets sets the number of runs equal to the number of years
-
 number_years <- length(profit_solar$year)
 
 reservoir_model_res <- as.data.frame(matrix(nrow = number_years, ncol = 3))
@@ -163,26 +159,24 @@ Keff <- runif(min = 0.5, max = 0.7, n = 20)
 # uncertainty in efficiency
 reservoir <- Keff %>% map_dfc(~ power_gen(
   height = reservoir_model_res$height,
-  flow = reservoir_model_res$flow, Keff = .x
-))
+  flow = reservoir_model_res$flow, Keff = .x))
 
 colnames(reservoir) <- Keff
-
 head(reservoir)
-
 
 # add years - remember we are making up data for the same years that we have solar
 reservoir$year <- profit_solar$year
 
 # reorganize for easier analysis
-reservoirg <- as.data.frame(reservoir) %>% pivot_longer(!year, names_to = "Keff", values_to = "power")
+reservoirg <- as.data.frame(reservoir) %>% pivot_longer(!year, names_to = "Keff", 
+                                                        values_to = "power")
 head(reservoirg)
 ```
 
 # Now compute profit ( like we did for solar)....
 
 ```{r powerprofit, echo=TRUE}
-
+# Read in R scripts
 source(here("R/compute_NPV.R"))
 source(here("R/compute_profit_frompower.R"))
 
@@ -190,7 +184,7 @@ best_guess_price <- 0.3  # $/kWh
 best_guess_discount <- 0.04  # 4%
 
 # create profit from hydro
-profit_hydro <- compute_profit_frompower(energy = reservoirg$power, year = reservoirg$year, price = best_guess_price, discount =best_guess_discount)
+profit_hydro <- compute_profit_frompower(energy = reservoirg$power, year = reservoirg$year, price = best_guess_price, discount = best_guess_discount)
 compute_NPV
 
 names(profit_hydro)
@@ -203,17 +197,14 @@ names(profit_hydro)
 ggplot(profit_hydro, aes(as.factor(year), netpre, group = year)) +
   geom_boxplot() +
   labs(y = "Net Present Value of Power in 1945 Dollars", x = "Year")
-
-
 ```
 
 ## Compare Profit from hydro/reservoir with solar {.scrollable}
 
 ```{r quicksum}
-
+# Take the mean of both profit
 mean(profit_hydro$netpre)
 mean(profit_solar$netpre)
-
 ```
 
 Hydro wins? Right?
@@ -225,9 +216,11 @@ Hydro wins? Right?
 a <- ggplot(profit_hydro, aes(year, netpre, group = year)) +
   geom_boxplot() +
   labs(title = "Hydro", y = "Net Present Values in 1945 Dollars", x = "Year")
+
 b <- ggplot(profit_solar, aes(year, netpre, group = year)) +
   geom_boxplot() +
   labs(title = "Solar", y = "Net Present Values in 1945 Dollars", x = "Year")
+
 ggarrange(a, b)
 ```
 
@@ -238,6 +231,7 @@ ggarrange(a, b)
 # combine to get a nice legend
 profit_hydro$etype <- "Hydro"
 profit_solar$etype <- "Solar"
+
 tmp <- rbind.data.frame(profit_hydro, profit_solar)
 ggplot(tmp, aes(as.factor(year), netpre, fill = etype)) +
   geom_boxplot() +
@@ -250,13 +244,10 @@ ggplot(tmp, aes(as.factor(year), netpre, fill = etype)) +
 -   look at spread of net present values
 
 ```{r quicksd}
-
+# Take the standard deviation
 sd(profit_hydro$netpre)
 sd(profit_solar$netpre)
-
 ```
-
-
 
 ## What we discovered
 
@@ -270,22 +261,18 @@ Note - we considered uncertainty in just a few parameters Would accounting for u
 
 If we wanted to reduce uncertainty in hydro profits - what measurements would we make? (or what parameter might we focus on?) How would we figure that out? (something to think about)
 
-
 ## Workflow ideas
 
+-   start with submodel sensitivity analysis
+-   hydro - *eff, height, flow rate*
+-   solar - *eff, ethresh, solar, PR, area*
+-   build multi component model
+-   additional sensitivity analysis (price, discount rate)
 
- * start with submodel sensitivity analysis 
-  * hydro - *eff, height, flow rate*
-  * solar - *eff, ethresh, solar, PR, area*
- * build multi component model
-  * additional sensitivity analysis (price, discount rate)
-  
-  Could build a wrapper to do this
-  
-  Models will often have a data structure (or file) that parameter values to explore
-  * could build a function to read this in and run the model for each parameter set
-  
-  
+Could build a wrapper to do this
+
+Models will often have a data structure (or file) that parameter values to explore \* could build a function to read this in and run the model for each parameter set
+
 # Summary {.scrollable}
 
 -   we built a multi component model to compare profit from two different power sources
@@ -295,7 +282,6 @@ If we wanted to reduce uncertainty in hydro profits - what measurements would we
 -   we included parameter uncertainty analysis to see how that impacted our profit estimates
 
 -   we saw how data organization is an important part of informal sensitivity analysis to make it easier to graph and analyze results
-
 
 ## What you can know about sensitivity before experimenting {.scrollable}
 
@@ -325,7 +311,7 @@ if $k_P$ is 0.002 and $k_T$ is 0.01 does that mean parrot suitability is more se
 
 Coefficient values - depends on what range in **T** and **P** so its hard to tell just from the coefficients
 
-<span style="color: blue;"> *IF* </span> **P** and **T** were in the same units (e.g percent deviation from a mean value), then you could use the coefficients to tell you if parrot suitability would be more sensitive to a 10% change in precipitation versus a 10% change in temperature
+[ *IF* ]{style="color: blue;"} **P** and **T** were in the same units (e.g percent deviation from a mean value), then you could use the coefficients to tell you if parrot suitability would be more sensitive to a 10% change in precipitation versus a 10% change in temperature
 
 $$
  PS = k_P * (P-Pavg)/Pavg + k_T * (T-Tavg)/Tavg
@@ -339,9 +325,9 @@ They are *linear* models
 
 The coefficients and standard error tell you about sensitivity
 
-- larger coefficients = output more sensitive to variation in the "variable"
+-   larger coefficients = output more sensitive to variation in the "variable"
 
-- smaller standard error = more confidence in coefficient
+-   smaller standard error = more confidence in coefficient
 
 ## When do we need to do sensitivity analysis {.scrollable}
 
@@ -352,7 +338,6 @@ The coefficients and standard error tell you about sensitivity
 -   BUT if you don't know what's in the box (transfer function) or if it has multiple boxes its difficult to tell
 
 -   any equation/transfer function with thresholds (if's, max, min's) hard to tell (you can't differentiate), sometimes parameters may matter sometimes they will not
-
 
 What do we do then...explore...and
 

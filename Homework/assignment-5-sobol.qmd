@@ -1,0 +1,241 @@
+---
+title: "Assignment 5: Sobol Sensitivity Analysis"
+format: pdf
+author: "Jay Kim"
+date: 2/10/26
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(sensitivity)
+library(tidyverse)
+# library(lhs)
+library(purrr)
+library(here)
+```
+
+# PART I - Paper Examples
+
+### Overview of the Sensitivity Analysis Approach
+
+Houle et al. (2017) use Sobol sensitivity analysis to determine which snow-model parameters contribute most to uncertainty in predictions of snow water equivalent (SWE). They explain that this method helps diagnose model behavior and highlights differences between snow model structures (Houle et al., 2017, p. 1).
+
+The study compares two models:
+
+-   `SNOW-17` (conceptual model)
+-   `VIC` (physically based snow model)
+
+The authors note that understanding parameter sensitivity is important for environmental planning because it identifies which physical processes contain the greatest uncertainty.
+
+### Key Sensitive Parameters Identified
+
+The sensitivity analysis shows that SWE uncertainty is strongly driven by following parameters:
+
+-   In `SNOW-17`, the parameter `MFMAX` (maximum melt factor) is the most influential across most sites and objective functions. (Houle et al., 2017, p. 9)
+-   For peak snow pack behavior, the parameter `PLWHC` becomes dominant, meaning it most affects peak SWE timing.
+-   In the `VIC` model, the albedo decay parameters `expA1` and `expA2` are highly sensitive, suggesting that snow-surface energy processes strongly affect SWE simulations.
+
+### Environmental Importance of Parameter Uncertainty
+
+These results matter for environmental management because uncertainty in the most sensitive parameters can lead to large differences in predicted snow accumulation. Since snow contributes a major portion of runoff in many western U.S. watersheds, parameter uncertainty directly affects water supply planning. The authors emphasize that Sobol sensitivity analysis can support better calibration by allowing modelers to focus on the most important parameters while fixing insensitive ones (Houle et al., 2017, p. 4). For water resource managers, this means that improving estimates of sensitive melt and albedo parameters can reduce uncertainty in runoff predictions, supporting more reliable reservoir operations and climate-change planning.
+
+Overall, the Houle et al. demonstrate that Sobol helps identify the parameters that drive SWE prediction uncertainty, improving understanding of snow processes and supporting better environmental decision-making under climate variability and warming conditions.
+
+# PART II - Atmospheric Conductance and Sobol
+
+### Generation of Parameter Values Using Sobol
+
+To see how uncertain inputs affect atmospheric conductance, I used Sobol to generate many different possible values for the four inputs:
+
+-   $h$ is vegetation height (cm)
+-   $k_d$ (typical value 0.7)
+-   $k_o$ (typical value 0.1)
+-   $v$ is wind speed (cm/s)
+
+We are going to use the following code provided in class:
+
+```{r Catm-function}
+#| message: false
+#| warning: false
+#| eval: false
+#| output: false
+
+Catm <- function(v, height, zm_add = 2, k_o = 0.1, k_d = 0.7) {
+  
+  zd <- k_d * height
+  zo <- k_o * height
+
+  zm <- height + zm_add
+
+  zd <- ifelse(zd < 0, 0, zd)
+  Ca <- ifelse(zo > 0,
+               v / (6.25 * log((zm - zd) / zo)**2), 0)
+
+  # convert to mm
+  Ca <- Ca * 1000
+  return(Ca)
+  
+}
+```
+
+For this new location, the inputs were assumed to vary like this:
+
+-   Wind speed: normally distributed with a mean of 300 cm/s and SD 50 cm/s
+-   Height: equally likely between 3.5 m and 5.5 m
+-   $k_d$ and $k_o$ normally distributed with small uncertainty (1% of default)
+
+Sobol gives a good spread of values across these ranges.
+
+```{r sobol-parms}
+set.seed(123)
+
+# Read in the source file
+source(here("R/Catm.R"))
+
+# Sample size
+np <- 2000
+
+# Default parameter values
+k_o <- rnorm(mean = 0.1, sd = 0.01 * 0.1, n = np)
+k_d <- rnorm(mean = 0.7, sd = 0.01 * 0.7, n = np)
+
+# Wind speed: N(300, 50)
+v <- rnorm(mean = 300, sd = 50, n = np)
+
+# Vegetation height: Uniform(3.5, 5.5) meters
+height <- runif(min = 3.5, max = 5.5, n = np)
+
+# Sobol matrix A (X1)
+X1 <- cbind.data.frame(k_o, k_d, v, height = height)
+
+# Repeat sampling for matrix B (X2)
+k_o <- rnorm(mean = 0.1, sd = 0.01 * 0.1, n = np)
+k_d <- rnorm(mean = 0.7, sd = 0.01 * 0.7, n = np)
+v <- rnorm(mean = 300, sd = 50, n = np)
+height <- runif(min = 3.5, max = 5.5, n = np)
+
+X2 <- cbind.data.frame(k_o, k_d, v, height = height)
+
+# Sobol model
+sens_Catm_Sobol <- sobolSalt(model = NULL, X1, X2, nboot = 100)
+```
+
+### Running the Model for the Parameters
+
+For each set of sampled input values, calculating the atmospheric conductance using:
+
+$$
+C_{at} = \frac{v_m}{6.25*{ln(\frac{z_m-z_d}{z_0})}^2}
+$$
+
+$$
+z_d = k_d*h
+$$ $$
+z_0 = k_0*h
+$$ $$
+z_m = h + 200
+$$
+
+This produced thousands of conductance estimates under different wind and vegetation conditions.
+
+```{r atm-conductance}
+# Run model for all parameter sets
+
+parms <- as.data.frame(sens_Catm_Sobol$X)
+colnames(parms) <- colnames(X1)
+
+# Reorder columns to match Catm(v, height, k_o, k_d)
+parms_for_model <- parms %>% select(v, height, k_o, k_d)
+
+# Model output
+res <- pmap_dbl(parms_for_model, Catm)
+
+# Attach results back into Sobol object
+sens_Catm_Sobol <- sensitivity::tell(sens_Catm_Sobol, res, res.names = "ga")
+
+```
+
+### Graph of Uncertainty in Conductance
+
+a histogram of all simulated $C_{at}$ values to show the range of conductance outcomes due to parameter uncertainty.
+
+```{r plot-uncertainty}
+# Combine parameters and output
+both <- cbind.data.frame(parms, gs = sens_Catm_Sobol$y)
+
+# Histogram of conductance uncertainty
+ggplot(both, aes(x = gs)) +
+  geom_histogram() +
+  geom_vline(xintercept = mean(both$gs), col = "cyan") +
+  labs(title = "Uncertainty in Atmospheric Conductance",
+       x = "Conductance (mm/s)",
+       y = "Count") +
+  theme_bw() +
+  theme(plot.title = )
+```
+
+### Graph of Conductance vs Wind Speed
+
+Plotting conductance against wind speed and colored the points using the parameter with the second-largest total Sobol effect.
+
+In this case, $k_0$ was usually the second most important parameter after wind speed.
+
+```{r plot-wind}
+# Identify 2nd most important parameter from total effects
+S_tbl <- tibble(Parameter = colnames(X1),
+                S1 = sens_Catm_Sobol$S$original)
+
+T_tbl <- tibble(Parameter = colnames(X1),
+                ST = sens_Catm_Sobol$T$original)
+
+sobol_tbl <- left_join(S_tbl, T_tbl, by = "Parameter") %>%
+  arrange(desc(ST))
+
+sobol_tbl
+
+# 2nd most important by total effect
+second_param <- sobol_tbl$Parameter[2]
+second_param
+
+# Conductance vs wind speed (colored by 2nd most influential parameter)
+ggplot(both, aes(v, gs, col = .data[[second_param]])) +
+  geom_point() +
+  labs(title = "Conductance vs Wind Speed",
+       x = "Wind speed (cm/s)",
+       y = "Conductance (mm/s)",
+       col = second_param) +
+  theme_bw()
+
+```
+
+### Computing Sobol Indices
+
+Calculating Sobol sensitivity indices to measure which inputs control the variability in $C_{at}$.
+
+The results showed:
+
+-   Wind speed $v$ explains almost all of the variation in conductance
+-   $k_0$ and $k_d$ have small secondary effects
+-   Height $h$ has very little influence in this setting
+
+```{r sobol-indices}
+# First-order sensitivity indices (main effects)
+row.names(sens_Catm_Sobol$S) <- colnames(parms)
+sens_Catm_Sobol$S
+
+# Total-effect sensitivity indices (includes interactions)
+row.names(sens_Catm_Sobol$T) <- colnames(parms)
+sens_Catm_Sobol$T
+
+# Print full summary
+print(sens_Catm_Sobol)
+```
+
+### Discussion: Sensitivity to Wind Speed Comparison
+
+In this new setting, wind speeds are higher and more variable than in the class example. The Sobol results show that wind speed $v$ is the dominant factor controlling atmospheric conductance uncertainty. Wind has the highest total-effect Sobol sensitivity index values (S1 ~ 0.81 and ST ~ 0.82), indicating that most of the variation in conductance is driven by changes in wind speed. Vegetation height is the second most important input (ST ~ 0.18). The parameters $k_0$ and $k_d$ have almost no effect (ST ~ 0.003). Compared to the class setting, conductance here is much more sensitive to wind speed because wind variability is much larger, while the influence of vegetation parameters becomes less important.
+
+## Reference
+
+Houle, E. S., Livneh, B., & Kasprzyk, J. R. (2017). *Exploring snow model parameter sensitivity using Sobol’ variance decomposition*. Environmental Modelling & Software, 89, 144–158.

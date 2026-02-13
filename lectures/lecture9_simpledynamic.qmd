@@ -101,7 +101,7 @@ Some useful terminology
 
 ![](img/engineerexample.jpg)
 
-## Feekback is a key feature of dynamic models {.scrollable}
+## Feedback is a key feature of dynamic models {.scrollable}
 
 -   dynamic systems often have *feedback* loops
     -   positive
@@ -121,7 +121,7 @@ Some useful terminology
 
 Discrete models for dynamic processes use *difference* equations Continuous models for dynamic processes use *differential* equations
 
-Often it depends on how you look at the system -
+Often it depends on how you look at the system
 
 ## Dynamic System {.scrollable}
 
@@ -130,7 +130,7 @@ Initial conditions
 -   to model how something evolves over space and time
     -   you need to know where it starts from
 
-    -   setting initial conditions is usually part of dynamic modellinng
+    -   setting initial conditions is usually part of dynamic modelling
 
 Boundary Value Problems
 
@@ -166,7 +166,7 @@ Add your answer to the Quiz
 
 Exponential Growth - Simple Dynamic System
 
--   *r* rate of growth(change) 
+-   *r* rate of growth(change)
 -   *P* population(density)
 
 Differential equation - $dP$ / $dt$ = $rP$
@@ -278,7 +278,7 @@ Two options
 -   we did this above - $P = PO * exp(rt)$ coded in *exppop.R*
 -   you can get the answer exactly and quickly this way
 
-2)  not integrable
+2)  not integral
 
 -   must be solved by iteration; this is what we do when we can't integrate both sides
 

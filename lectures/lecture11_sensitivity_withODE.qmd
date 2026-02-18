@@ -237,12 +237,15 @@ allres <- allresults %>% map_dfr(`[`, c("maxpop", "threshyear"))
 # do a quick summary to get a sense of the range
 summary(allres)
 # create boxplots of our two metrics for all parameters - use facet wrap since population and year are different y-axis
-tmp <- allres %>% pivot_longer(cols = everything(), names_to = "metric", values_to = "value")
+tmp <- allres %>% 
+  pivot_longer(cols = everything(), names_to = "metric", values_to = "value")
+
 ggplot(tmp, aes(metric, value)) +
-  geom_boxplot()+facet_wrap(~metric, scales="free")
+  geom_boxplot() + 
+  facet_wrap(~metric, scales = "free")
 ```
 
-## Compute the sobol indicies for each metric {.scrollable}
+## Compute the Sobol indices for each metric {.scrollable}
 
 -   save the *tell* to different objects so you can keep re-using the original sobol object
 
@@ -296,7 +299,7 @@ ggplot(allresp, aes(K, maxpop, col=r ))+geom_point()+
   labs(y="Year that threshold is reached", x="K")
 ```
 
-## Negative sobol first order indices {.scrollable}
+## Negative Sobol first order indices {.scrollable}
 
 if confidence interval includes zero - not a problem
 
@@ -304,7 +307,7 @@ if it doesn't there are numerical issues - try running more samples
 
 ## Error messages from Sobol {.scrollable}
 
-*All values of t are equal to 0.999999999999856 \n Cannot calculate confidence intervals*
+*All values of t are equal to 0.999999999999856* \n Cannot calculate confidence intervals
 
 relationship looks like its completely prescribed - which is true in the case of carrying capacity
 
@@ -326,8 +329,7 @@ Suggest that the solver (numerical integration) had issues
     *result = ode(y=Pinitial, times=simtimes, func=func, parms=parms, method="daspk")*
     ```
 
--   "stiff" problems are harder for numerical integration to solve - (small changes have big impacts); a threshold carrying capacity does that
-## Ways to use dynamic models {.scrollable}
+-   "stiff" problems are harder for numerical integration to solve - (small changes have big impacts); a threshold carrying capacity does that \## Ways to use dynamic models {.scrollable}
 
 Goal: To provide insight into environmental systems, and how they respond to intervention/disturbance/change
 
@@ -378,7 +380,6 @@ Disturbance is integrated into the model [**endogenous**]{style="color:orange"}
     -   Pulse - intervals/one-time - could be a shock to the system
 
 Examples?
-
 
 ## [Assignment]{style="color:orange"} {.scrollable}
 
